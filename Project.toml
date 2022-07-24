@@ -1,0 +1,17 @@
+name = "jDMFT"
+uuid = "9d76a5cc-f3ec-423e-828a-71f7481e90ea"
+authors = ["Julian Stobbe <Atomtomate@gmx.de>"]
+version = "0.1.0"
+
+[deps]
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Dispersions = "9451dd48-6b2a-4bde-a443-9ec270a37806"
+EquivalenceClassesConstructor = "b0d053df-94a8-4c0c-9762-4584a2fcd8b0"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
