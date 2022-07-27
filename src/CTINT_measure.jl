@@ -4,6 +4,18 @@
 
 #
 #TODO: use more advanced data structure to capture statistics
+"""
+    Measurements
+
+Fields
+-------------
+- **`samples`**      : `Vector{ComplexF64}`, List of all samples
+- **`τWeights`**     : `Vector{Float64}`, weight corresponding to each point on the `τGrid`
+- **`τGrid`**        : `Vector{Float64}`, sampling points for τ
+- **`NSamples`**     : `Int`, number of samples
+- **`totalSign`**    : `Int`, sign
+"""
+
 mutable struct Measurements
     samples::Vector{ComplexF64}
     τWeights::Vector{Float64}
@@ -11,6 +23,15 @@ mutable struct Measurements
     NSamples::Int
     totalSign::Int
 end
+
+"""
+    Measurements(NBins::Int, β::Float64, type::Symbol)
+
+Generates a Measurements struct for a temperature `β` with `NBins` bins and of grid type `type` which may be:
+- 'GaussQuad' : generates a Gauss Radau grid and its corresponding τWeights
+- 'Riemann'   : generates an evenly distriubted grid where each point has equal weight
+"""
+
 function Measurements(NBins::Int, β::Float64, type::Symbol)
     τGrid, τWeights = if type == :GaussQuad
         τGrid_red, τWeights = gaussradau(NBins);
@@ -26,7 +47,14 @@ end
 """
     CTInt_Confs
 
-
+Fields
+-------------
+- **`β`**         : `Float64`, inverse temperature in units of 1/t
+- **`U`**         : `Float64`, interaction strenght in units of t
+- **`GWeiss`**    : `τFunction`, noninteracting impurity Green's function
+- **`τList`**     : `Array{Float64}`, τ values on which the Green's function is evaluated
+- **`τiList`**    : `Array{Float64}`, ???
+- **`siList`**    : `Array{Int}`, ???
 """
 mutable struct CTInt_Confs
     β::Float64
@@ -66,6 +94,10 @@ end
 #                          Measurement functions                                 =
 # ================================================================================
 
+"""
+measure_τ!(rng::AbstractRNG, m::Measurements, sign::Int, confs::CTInt_Confs, M::SampleMatrix; with_τshift=true)
+
+"""
 
 
 function measure_τ!(rng::AbstractRNG, m::Measurements, sign::Int, 

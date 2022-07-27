@@ -1,3 +1,16 @@
+"""
+    CTInt_Confs
+
+Fields
+-------------
+- **`data`**        : `Matrix{ComplexF64}`, actual matrix entries
+- **`rowCache`**    : `Vector{ComplexF64}`, ???
+- **`colCache`**    : `Vector{ComplexF64}`, ???
+- **`S`**           : `Complex64`, ??? action???
+- **`N`**           : `Int`, matrix dimension
+
+"""
+
 mutable struct SampleMatrix
     data::Matrix{ComplexF64}
     rowCache::Vector{ComplexF64}
