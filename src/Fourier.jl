@@ -50,5 +50,6 @@ function ω_to_τ(in::Vector{ComplexF64}, νnGrid::Vector{ComplexF64}, τGrid::V
     return res
 end
 
-τIntegrate(f::Function, τWeights::Vector{Float64}, τGrid::Vector{Float64}) = dot(τWeights, f.(τGrid)) * (last(τGrid) - first(τGrid))/2
+τIntegrate(f::AbstractVector, τWeights::Vector, τGrid::Vector{Float64}) = dot(τWeights, f) * (last(τGrid) - first(τGrid))/2
+τIntegrate(f::Function, τWeights::Vector, τGrid::Vector{Float64}) = dot(τWeights, f.(τGrid)) * (last(τGrid) - first(τGrid))/2
 τIntegrate(f::τFunction) = dot(f.τWeights, f.data) * (last(f.τGrid) - first(f.τGrid))/2

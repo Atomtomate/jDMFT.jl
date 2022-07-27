@@ -1,4 +1,3 @@
-
 mutable struct SampleMatrix
     data::Matrix{ComplexF64}
     rowCache::Vector{ComplexF64}
@@ -13,3 +12,4 @@ mutable struct SampleMatrix
             Vector{ComplexF64}(undef, N), 0 + 0im, 0)
     end
 end
+

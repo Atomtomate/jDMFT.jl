@@ -6,6 +6,7 @@
     @test isapprox(τIntegrate(x->x^2, τWeights, τGrid), 2.76267, rtol=1e-4)
     @test isapprox(τIntegrate(x->x^3, τWeights, τGrid), 0.8224, rtol=1e-4)
     @test isapprox(τIntegrate(x->x^2, τWeights, τGrid), τIntegrate(fτ), atol=1e-9)
+    @test isapprox(τIntegrate(τGrid .^ 2, τWeights, τGrid), τIntegrate(fτ), atol=1e-9)
 end
 
 @testset "naive TF" begin
@@ -14,5 +15,5 @@ end
     G2_riemann = τ_to_ω(G_τ_riemann, νnGrid, [1.0], [-0.5])
     G2_GR = τ_to_ω(G_τ, νnGrid, [1.0], [-0.5])
     @test maximum(abs.((GW.data .- G2_riemann.data) ./ GW.data)) < 1.0
-    @test maximum(abs.((GW.data .- G2_GR.data) ./ GW.data)) < 1e-6
+    @test maximum(abs.((GW.data .- G2_GR.data) ./ GW.data)) < 1/(length(G_τ.data)^1.8)
 end

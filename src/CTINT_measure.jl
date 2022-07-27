@@ -1,3 +1,8 @@
+# ================================================================================
+#                   Data structures and related functions                        =
+# ================================================================================
+
+#
 #TODO: use more advanced data structure to capture statistics
 mutable struct Measurements
     samples::Vector{ComplexF64}
@@ -5,6 +10,17 @@ mutable struct Measurements
     τGrid::Vector{Float64}
     NSamples::Int
     totalSign::Int
+end
+function Measurements(NBins::Int, β::Float64, type::Symbol)
+    τGrid, τWeights = if type == :GaussQuad
+        τGrid_red, τWeights = gaussradau(NBins);
+        τGrid_red .* β ./ 2 .+ β ./ 2, τWeights
+    elseif type == :Riemann
+        collect(LinRange(0,β-0.001/NBins, NBins)), (ones(Float64, length(NBins)) ./ length(NBins))
+    else
+        throw(DomainError(type, "Type must specify pre-implemented τ-grid type (GaussQuad or Riemann)."))
+    end
+    return Measurements(zeros(ComplexF64, length(τGrid)), τWeights, τGrid, 0, 0)
 end
 
 """
@@ -28,62 +44,61 @@ end
 CTInt_Confs(GWeiss::τFunction, U::Float64) =  CTInt_Confs(GWeiss, GWeiss.τGrid, U)
 
 
-#TODO: test and implement fast-version (only draw random indices)
-#TODO: replace linear interpolation by some cubic lin. inter, using legndre grid 
-function draw_Gτ(GWeiss::τFunction, τi::Float64)::ComplexF64
-    Nτ = length(GWeiss.data)
-    sign = τi < 0 ? -1 : 1
-    τi = τi < 0 ? τi + GWeiss.β  : τi
-    ind = searchsortedfirst(GWeiss.τGrid, τi)
-    ind = ind > Nτ ? ind-1 : ind
-    m = if ind < Nτ 
-        (GWeiss.data[ind+1] - GWeiss.data[ind])/(GWeiss.τGrid[ind+1] - GWeiss.τGrid[ind]) 
+#TODO: use some sort of module instead...
+#TODO: move to DataTypes, remove CTInt_confs from arguments
+function update_cache!(C::CTInt_Confs, M::SampleMatrix; threshold = 0, incr = 10)
+    if M.N - length(M.rowCache) >= threshold
+        lNew = size(M.data,1) + incr
+        data_cache = similar(M.data, (size(M.data) .+ incr)...)
+        data_cache[axes(M.data)...] .= M.data
+        M.data = data_cache
+        resize!(M.rowCache,lNew)
+        resize!(M.colCache,lNew)
+        resize!(C.τiList, lNew)
+        resize!(C.siList, lNew)
+        return 1
     else
-        (GWeiss.data[1] - GWeiss.data[ind])/(GWeiss.τGrid[1] - GWeiss.τGrid[ind] + GWeiss.β)
+        return 0
     end
-    val = GWeiss.data[ind] + m * (τi - GWeiss.τGrid[ind])
-    return val
 end
 
+# ================================================================================
+#                          Measurement functions                                 =
+# ================================================================================
 
-function measure_τ!(rng::AbstractRNG, m::Measurements, success::Bool, sign::Int, 
-                  C::CTInt_Confs, M::SampleMatrix)
+
+
+function measure_τ!(rng::AbstractRNG, m::Measurements, sign::Int, 
+                  confs::CTInt_Confs, M::SampleMatrix; with_τshift=true)
+    τi_list = Vector{Float64}(undef, length(M.rowCache))
     for i in 1:M.N
-        τi = C.τiList[i] - τ_shift
-        M.rowCache[i] = draw_Gτ(C.τList, C.GWeiss, τi, C.β)
+        τi_list[i] = confs.τiList[i]
+        if with_τshift
+            τi_list[i] -= rand(rng, Float64) * confs.β
+        end
+        M.rowCache[i] = draw_Gτ(confs.GWeiss, τi_list[i])
     end
-    M.colCache[:] = view(M.data, 1:M.N, 1:M.N) * view(M.rowCache, 1:M.N)
+    M.colCache[1:M.N] = view(M.data, 1:M.N, 1:M.N) * view(M.rowCache, 1:M.N)
     N_bins = length(m.samples)
     for i in 1:M.N
-        τ_shift = rand(rng, Float64) * C.β
-        τi = C.τList[i] - τ_shift
-        s = 2*(τi > 0) - 1
-        τi  = τi + (τi < 0)*C.β
-        ind = ceil(Int, τi/C.β * N_bins)
+        τi = τi_list[i]
+        s, ind = τIndex(τi, m.τGrid, confs.β)
         m.samples[ind] += sign * s * M.colCache[i]
     end
     m.NSamples += 1
     m.totalSign += sign
 end
 
-# struct τFunction    
-#    14     data::Vector{ComplexF64}
-#    13     β::Float64
-#    12     τGrid::AbstractVector
-#    11     τWeights::AbstractVector
-#    10 end
-function measure_GImp_τ(m::Measurements, GWeiss::τFunction, Niw)
-    data = Vector{ComplexF64}(undef, length(GWeiss.data))
-    for i in 1:length(data)
-        g0_data = [draw_Gτ(GWeiss) for τi in m.τGrid]
-        for j in 1:length(m.samples)
-
-        end
+#TODO: use convolution theorem here
+function measure_GImp_τ(m::Measurements, GWeiss::τFunction)
+    GImp_τ = Vector{ComplexF64}(undef, length(GWeiss.data))
+    for i in 1:length(GImp_τ)
+        τi = GWeiss.τGrid[i]
+        GImp_τ[i] = GWeiss.data[i] - 
+                        τIntegrate(τi_sample -> draw_Gτ(GWeiss, τi - τi_sample),
+                                    m.samples .* m.τWeights ./ m.NSamples, m.τGrid)
     end
-    #TODO: fourier trafo for each iν
+    return GImp_τ
 end
 
-
 #TODO: frequency measurement
-#
-#

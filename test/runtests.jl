@@ -17,8 +17,8 @@ include("DataTypes.jl")
 U = 0.7
 μ = 0.35
 β = 1.0
-Nν = 500
-Nτ = 2000
+Nν = 20
+Nτ = 100
 νnGrid = jDMFT.iν_array(β, -Nν:Nν-1)
 τGrid_red, τWeights = gaussradau(Nτ);
 τGrid = τGrid_red .* β ./ 2 .+ β ./ 2;
@@ -30,6 +30,9 @@ GImp_τ_test = ω_to_τ(GW, τWeights, τGrid)
 
 @testset "Fourier" begin
     include("Fourier.jl")
+end
+@testset "GFTools" begin
+    include("GFTools.jl")
 end
 @testset "DMFT Loop" begin
     include("DMFTLoop.jl")

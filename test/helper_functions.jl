@@ -17,7 +17,7 @@ function init_weissgf_from_ed(fn::String, Niν::Int)
         end
         i += 1
     end
-    println("Read from file: N=", N, ", μ=", μ, ", β=", β, ", ϵp=", ϵp, ", tp=", tp)
+    #println("Read from file: N=", N, ", μ=", μ, ", β=", β, ", ϵp=", ϵp, ", tp=", tp)
     init_weissgf_from_ed(Niν, μ, β, ϵp, tp)
 end
 
