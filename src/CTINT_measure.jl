@@ -2,23 +2,24 @@
 #                   Data structures and related functions                        =
 # ================================================================================
 
+const τRangeϵ = 0.001
+
 #
 #TODO: use more advanced data structure to capture statistics
 """
     Measurements
 
+Accumulation helper, see Gull et al., 2008.
+
 Fields
 -------------
 - **`samples`**      : `Vector{ComplexF64}`, List of all samples
-- **`τWeights`**     : `Vector{Float64}`, weight corresponding to each point on the `τGrid`
 - **`τGrid`**        : `Vector{Float64}`, sampling points for τ
 - **`NSamples`**     : `Int`, number of samples
-- **`totalSign`**    : `Int`, sign
+- **`totalSign`**    : `Int`, total Monte Carlo sign.
 """
-
 mutable struct Measurements
     samples::Vector{ComplexF64}
-    τWeights::Vector{Float64}
     τGrid::Vector{Float64}
     NSamples::Int
     totalSign::Int
@@ -31,17 +32,15 @@ Generates a Measurements struct for a temperature `β` with `NBins` bins and of 
 - 'GaussQuad' : generates a Gauss Radau grid and its corresponding τWeights
 - 'Riemann'   : generates an evenly distriubted grid where each point has equal weight
 """
-
 function Measurements(NBins::Int, β::Float64, type::Symbol)
     τGrid, τWeights = if type == :GaussQuad
-        τGrid_red, τWeights = gaussradau(NBins);
-        τGrid_red .* β ./ 2 .+ β ./ 2, τWeights
+        τGrid_red, τWeights = gaussradau(0, β-τRangeϵ/NBins, NBins)
     elseif type == :Riemann
-        collect(LinRange(0,β-0.001/NBins, NBins)), (ones(Float64, length(NBins)) ./ length(NBins))
+        τGrid_red, τWeights = riemann(0, β-τRangeϵ/NBins, NBins)
     else
         throw(DomainError(type, "Type must specify pre-implemented τ-grid type (GaussQuad or Riemann)."))
     end
-    return Measurements(zeros(ComplexF64, length(τGrid)), τWeights, τGrid, 0, 0)
+    return Measurements(zeros(ComplexF64, length(τGrid)), τGrid, 0, 0)
 end
 
 """
@@ -49,12 +48,12 @@ end
 
 Fields
 -------------
-- **`β`**         : `Float64`, inverse temperature in units of 1/t
-- **`U`**         : `Float64`, interaction strenght in units of t
+- **`β`**         : `Float64`, inverse temperature
+- **`U`**         : `Float64`, interaction strenght
 - **`GWeiss`**    : `τFunction`, noninteracting impurity Green's function
 - **`τList`**     : `Array{Float64}`, τ values on which the Green's function is evaluated
-- **`τiList`**    : `Array{Float64}`, ???
-- **`siList`**    : `Array{Int}`, ???
+- **`τiList`**    : `Array{Float64}`, sampled τ, i-th entry corresponds to i-th row/column in [`SampleMatrix`](@ref)
+- **`siList`**    : `Array{Int}`, external ising field, i-th entry corresponds to i-th row/column in [`SampleMatrix`](@ref)
 """
 mutable struct CTInt_Confs
     β::Float64
@@ -95,12 +94,12 @@ end
 # ================================================================================
 
 """
-measure_τ!(rng::AbstractRNG, m::Measurements, sign::Int, confs::CTInt_Confs, M::SampleMatrix; with_τshift=true)
+    accumulate!(rng::AbstractRNG, m::Measurements, sign::Int, confs::CTInt_Confs, M::SampleMatrix; with_τshift=true)
 
+Updates Monte Carlo estimate by measuring impurity Green's function for given configuration
+stored in `M`.
 """
-
-
-function measure_τ!(rng::AbstractRNG, m::Measurements, sign::Int, 
+function accumulate!(rng::AbstractRNG, m::Measurements, sign::Int, 
                   confs::CTInt_Confs, M::SampleMatrix; with_τshift=true)
     τi_list = Vector{Float64}(undef, length(M.rowCache))
     for i in 1:M.N
@@ -123,12 +122,14 @@ end
 
 #TODO: use convolution theorem here
 function measure_GImp_τ(m::Measurements, GWeiss::τFunction)
-    GImp_τ = Vector{ComplexF64}(undef, length(GWeiss.data))
+    GImp_τ = deepcopy(GWeiss.data)
     for i in 1:length(GImp_τ)
         τi = GWeiss.τGrid[i]
-        GImp_τ[i] = GWeiss.data[i] - 
-                        τIntegrate(τi_sample -> draw_Gτ(GWeiss, τi - τi_sample),
-                                    m.samples .* m.τWeights ./ m.NSamples, m.τGrid)
+        tmp = 0.0
+        for (j,τj_sample) in enumerate(m.τGrid)
+            tmp += draw_Gτ(GWeiss, τi - τj_sample) * m.samples[j] ./ m.totalSign
+        end
+        GImp_τ[i] -= tmp
     end
     return GImp_τ
 end

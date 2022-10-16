@@ -1,16 +1,15 @@
 include("CTINT_measure.jl")
 
-function setup_CTINT(GWeiss::τFunction, sample_τGrid::Vector{Float64}, sample_τWeights::Vector{Float64}, U::Float64)
+function setup_CTINT(GWeiss::τFunction, sample_τGrid::Vector{Float64}, U::Float64)
     cf = CTInt_Confs(GWeiss, U)
-    me = Measurements(zeros(ComplexF64, length(sample_τGrid)), sample_τWeights, sample_τGrid, 0, 0)
+    me = Measurements(zeros(ComplexF64, length(sample_τGrid)), sample_τGrid, 0, 0)
     M = SampleMatrix()
     return cf, me, M
 end
 
-function sample(GWeiss::τFunction, U::Float64, N::Int; sample_τGrid=nothing, sample_τWeights=nothing)
+function sample(GWeiss::τFunction, U::Float64, N::Int; sample_τGrid=nothing)
     sample_τGrid = sample_τGrid == nothing ? GWeiss.τGrid : sample_τGrid
-    sample_τWeights = sample_τWeights == nothing ? GWeiss.τWeights : sample_τWeights
-    cf, me, M = setup_CTINT(GWeiss, sample_τGrid, sample_τWeights, U)
+    cf, me, M = setup_CTINT(GWeiss, sample_τGrid, U)
     sample!(cf, me, M, N)
 end
 
@@ -18,7 +17,7 @@ function sample!(confs::CTInt_Confs, measurements::Measurements, M::SampleMatrix
     rng = MersenneTwister(0)
     for i in 1:N
         success, sign = sample_step!(rng, confs, M)
-        measure_τ!(rng, measurements, sign, confs, M)
+        accumulate!(rng, measurements, sign, confs, M)
     end
 end
 

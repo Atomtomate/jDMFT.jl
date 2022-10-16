@@ -1,5 +1,5 @@
 # ================================================================================
-#                   MatsubaraFunction and τFunction overload                     =
+# =                 MatsubaraFunction and τFunction overload                     =
 # ================================================================================
 
 function  τ_to_ω(F::τFunction, νGrid::Vector{ComplexF64}, tail_coeffs::AbstractVector, ft_tail::AbstractVector)
@@ -12,9 +12,31 @@ function  ω_to_τ(F::MatsubaraFunction, τWeights::AbstractVector, τGrid::Abst
     τFunction(vals, F.β, τGrid, τWeights) 
 end
 
+# ================================================================================
+# =                               Grid Functions                                 =
+# ================================================================================
+
+"""
+    riemann(start::Real, stop::Real, N::Int)
+
+Generate grid for Riemann sum integration from `start` to `stop` with `N` points.
+Returns `(weights, grid)`
+"""
+riemann(start::Real, stop::Real, N::Int) = τGridTransform(start, stop, collect(LinRange(-1, 1, N))), 2 .*ones(N) ./ N
+
+"""
+    gaussradau(start::Real, stop::Real, N::Int)
+
+Generate grid for gaussradau sum integration from `start` to `stop` with `N` points.
+Returns `(weights, grid)`, this is a wrapper around `gaussradau` from `FastGaussQuadrature`.
+"""
+function gaussradau(start::Real, stop::Real, N::Int) 
+    grid,weights = FastGaussQuadrature.gaussradau(N)
+    τGridTransform(start, stop, grid), weights
+end
 
 # ================================================================================
-#                           Low Level Implementations                            =
+# =                         Low Level Implementations                            =
 # ================================================================================
 
 function τ_to_ω_GR(in::Vector{ComplexF64}, νnGrid::Vector{ComplexF64}, τWeights::Vector{Float64}, τGrid::Vector{Float64}, β::Float64)
@@ -50,6 +72,23 @@ function ω_to_τ(in::Vector{ComplexF64}, νnGrid::Vector{ComplexF64}, τGrid::V
     return res
 end
 
+
+"""
+    τGridTransform(start::Float64, stop::Float64, grid::Vector{Float64})
+
+Transform integration grid from `[-1,1]` to `[start, stop]`.
+"""
+τGridTransform(start::Real, stop::Real, grid::Vector{Float64}) = ((stop - start) / 2) .* grid .+ (start + stop) / 2
+
+"""
+    τIntegrate(f::AbstractVector, τWeights::Vector, τGrid::Vector{Float64})
+    τIntegrate(f::Function, τWeights::Vector, τGrid::Vector{Float64})
+    τIntegrate(f::τFunction)
+
+Integrates `Vector` of values, `Function` or `τFunction` over `τGrid`, given `τWeights`. 
+Note, that you hav to transform any τ-spacing from the `[-1,1]` interval using [`τGridTransform`](@ref).
+"""
 τIntegrate(f::AbstractVector, τWeights::Vector, τGrid::Vector{Float64}) = dot(τWeights, f) * (last(τGrid) - first(τGrid))/2
 τIntegrate(f::Function, τWeights::Vector, τGrid::Vector{Float64}) = dot(τWeights, f.(τGrid)) * (last(τGrid) - first(τGrid))/2
 τIntegrate(f::τFunction) = dot(f.τWeights, f.data) * (last(f.τGrid) - first(f.τGrid))/2
+

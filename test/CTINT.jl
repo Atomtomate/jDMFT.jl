@@ -12,6 +12,7 @@ end
     @test length(c.τiList) == 10
     @test length(c.siList) == 10
 end
+
 @testset "try_insert!" begin
     rng = MersenneTwister(0)
     cf = jDMFT.CTInt_Confs(G_τ, U)

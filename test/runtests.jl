@@ -25,6 +25,8 @@ Nτ = 100
 GW_in = init_weissgf_from_ed((@__DIR__)*"/test_data/U$(U)_b$(β)_hubb.andpar", Nν)
 GW = MatsubaraFunction(jDMFT.PH_transform(GW_in, U), β, νnGrid, [1.0], [-0.5])
 G_τ = ω_to_τ(GW, τWeights, τGrid)
+τGrid_riemann = collect(LinRange(0,β-0.0001, length(G_τ.data)))
+G_τ_riemann  = ω_to_τ(GW, ones(Float64, length(τGrid_riemann)) ./ length(τGrid_riemann), τGrid_riemann)
 GImp_test = init_GImp((@__DIR__)*"/test_data/U0.7_b1.0_gm_wim", Nν)
 GImp_τ_test = ω_to_τ(GW, τWeights, τGrid)
 

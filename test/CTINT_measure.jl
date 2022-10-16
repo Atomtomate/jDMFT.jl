@@ -24,15 +24,12 @@ end
 
 @testset "Measurements" begin
     β_test = 2.2
-    τGrid_red, τWeights = gaussradau(10);
-    τGrid = τGrid_red .* β_test ./ 2 .+ β_test ./ 2;
-    τGrid_riemann = collect(LinRange(0,β_test-0.001/10, 10))
+    τGrid, τWeights = jDMFT.gaussradau(0,β_test-0.001/10,10);
+    τGrid_riemann, τWeights_riemann = jDMFT.riemann(0,β_test-0.001/10,10);
 
     sample_τGrid = 1.1 .* collect(1:10)
-    sample_τWeights = 1.1 .* collect(6:15)
-    m = jDMFT.Measurements(zeros(ComplexF64, length(sample_τGrid)), sample_τWeights, sample_τGrid, 0, 0)
+    m = jDMFT.Measurements(zeros(ComplexF64, length(sample_τGrid)), sample_τGrid, 0, 0)
     @test all(m.samples .== zeros(ComplexF64, length(sample_τGrid)))
-    @test all(m.τWeights .≈ sample_τWeights)
     @test all(m.τGrid .≈ sample_τGrid)
     @test m.NSamples == 0
     @test m.totalSign == 0
@@ -41,25 +38,23 @@ end
     @test m2.totalSign == 0
     @test sum(m2.samples) == 0
     @test all(m2.τGrid .≈ τGrid)
-    @test all(m2.τWeights .≈ τWeights)
     m3 = jDMFT.Measurements(10, β_test, :Riemann)
     @test m3.NSamples == 0
     @test m3.totalSign == 0
     @test sum(m3.samples) == 0
     @test all(m3.τGrid .≈ τGrid_riemann)
-    @test all(m3.τWeights .≈ ones(Float64, length(10)) ./ length(10))
     @test_throws DomainError jDMFT.Measurements(10, β_test, :throw) 
 end
 
-@testset "measure_τ" begin
+@testset "accumulate" begin
     rng = MersenneTwister(0)
     cf = jDMFT.CTInt_Confs(G_τ, U)
     N = length(cf.τiList)
-    m_R = jDMFT.Measurements(N, G_τ.β, :Riemann)
+    m_R = jDMFT.Measurements(N, G_τ_riemann.β, :Riemann)
     m_GQ = jDMFT.Measurements(N, G_τ.β, :GaussQuad)
     M = jDMFT.SampleMatrix()
-    jDMFT.measure_τ!(rng, m_R, -1, cf, M, with_τshift=false)
-    jDMFT.measure_τ!(rng, m_GQ, -1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_R, -1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_GQ, -1, cf, M, with_τshift=false)
     @test m_R.NSamples == 1
     @test m_R.totalSign == -1
     @test sum(m_R.samples) == 0
@@ -70,16 +65,16 @@ end
     M.data[1,1] = 1.0
     τi_test1 = 0.0
     cf.τiList[1] = τi_test1
-    jDMFT.measure_τ!(rng, m_R, -1, cf, M, with_τshift=false)
-    jDMFT.measure_τ!(rng, m_GQ, -1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_R, -1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_GQ, -1, cf, M, with_τshift=false)
     @test sum(m_R.samples) ≈ -jDMFT.draw_Gτ(G_τ, τi_test1)
     @test sum(m_R.samples) == sum(m_GQ.samples)
 
     m_R = jDMFT.Measurements(N, G_τ.β, :Riemann)
     m_GQ = jDMFT.Measurements(N, G_τ.β, :GaussQuad)
     M.data[1,1] = 1/G_τ.data[1]
-    jDMFT.measure_τ!(rng, m_R, 1, cf, M, with_τshift=false)
-    jDMFT.measure_τ!(rng, m_GQ, 1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_R, 1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_GQ, 1, cf, M, with_τshift=false)
     @test m_R.samples[1] ≈ 1.0
     @test m_GQ.samples[1] ≈ 1.0
     @test sum(m_R.samples) ≈ 1.0
@@ -92,32 +87,40 @@ end
     m_R = jDMFT.Measurements(5, G_τ.β, :Riemann)
     m_GQ = jDMFT.Measurements(5, G_τ.β, :GaussQuad)
     M = jDMFT.SampleMatrix()
-    M.N = 1
-    τi_test1 = 0.0
 
     # Set measurement to 0, then GImp == GWeiss
+    M.N = 1
+    τi_test1 = 0.0
     M.data[1,1] = 0.0
     cf.τiList[1] = τi_test1
-    jDMFT.measure_τ!(rng, m_R, -1, cf, M, with_τshift=false)
-    jDMFT.measure_τ!(rng, m_GQ, -1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_R, -1, cf, M, with_τshift=false)
+    jDMFT.accumulate!(rng, m_GQ, -1, cf, M, with_τshift=false)
     @test sum(jDMFT.measure_GImp_τ(m_R, G_τ)) ≈ sum(jDMFT.measure_GImp_τ(m_GQ, G_τ))
     @test sum(jDMFT.measure_GImp_τ(m_R, G_τ)) ≈ sum(G_τ.data)
-
-    # Set measurement to -δ_τ0, then GImp == GWeiss + GWeiss(τ = 0)
-    m_R = jDMFT.Measurements(5, G_τ.β, :Riemann)
-    m_GQ = jDMFT.Measurements(5, G_τ.β, :GaussQuad)
-    M.data[1,1] = 1/G_τ.data[1]
-    jDMFT.measure_τ!(rng, m_R, 1, cf, M, with_τshift=false)
-    jDMFT.measure_τ!(rng, m_GQ, 1, cf, M, with_τshift=false)
-    t_R = jDMFT.measure_GImp_τ(m_R, G_τ)
-    t_GQ = jDMFT.measure_GImp_τ(m_GQ, G_τ)
-    println("DBG: ", round.(real.(t_R), digits=3))
-    println("DBG: ", round.(real.(G_τ.data), digits=3))
-    #println("DBG: ", t_GQ)
+    jDMFT.accumulate!(rng, m_R, -1, cf, M, with_τshift=true)
+    jDMFT.accumulate!(rng, m_GQ, -1, cf, M, with_τshift=true)
     @test sum(jDMFT.measure_GImp_τ(m_R, G_τ)) ≈ sum(jDMFT.measure_GImp_τ(m_GQ, G_τ))
-    @test sum(jDMFT.measure_GImp_τ(m_R, G_τ)) ≈ 2*sum(G_τ.data)
-    println(m_R.samples .* m_R.τWeights ./ m_R.NSamples)
-    println(m_GQ.samples .* m_GQ.τWeights ./ m_GQ.NSamples)
-    println(sum(G_τ.data .+ G_τ.data[1]))
-    println(sum(G_τ.data .- G_τ.data[1]))
+    @test sum(jDMFT.measure_GImp_τ(m_R, G_τ)) ≈ sum(G_τ.data)
+    @test sum(jDMFT.measure_GImp_τ(m_GQ, G_τ)) ≈ sum(jDMFT.measure_GImp_τ(m_GQ, G_τ))
+
+     m_R.samples = zeros(ComplexF64, length(m_R.samples))
+     m_GQ.samples = zeros(ComplexF64, length(m_GQ.samples))
+     m_R.samples[1] = 1.0
+     m_GQ.samples[1] = 1.0
+     m_R.totalSign = 1
+     #M.data[1,1] = 
+#
+#     #println(m_R.τGrid)
+#     println(m_R.samples .* m_R.τWeights ./ m_R.totalSign)
+#     println(m_R.τGrid)
+#     @test τIntegrate(x -> x+10, m_R.samples .* m_R.τWeights ./ m_R.totalSign, m_R.τGrid)
+#
+     #jDMFT.accumulate!(rng, m_R, -1, cf, M, with_τshift=false)
+     #jDMFT.accumulate!(rng, m_GQ, -1, cf, M, with_τshift=false)
+     #jDMFT.accumulate!(rng, m_GQ, 1, cf, M, with_τshift=false)
+     #println(jDMFT.measure_GImp_τ(m_R, G_τ))
+     @test sum(jDMFT.measure_GImp_τ(m_R, G_τ)) ≈ 0.0
+     m = m_R
+
+     #@test sum(jDMFT.measure_GImp_τ(m_GQ, G_τ)) ≈ 0.0
 end
