@@ -141,14 +141,6 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
-[[deps.Dispersions]]
-deps = ["AbstractFFTs", "Combinatorics", "Coverage", "Documenter", "EquivalenceClassesConstructor", "FFTW", "FastGaussQuadrature", "LinearAlgebra", "Pkg", "Random", "ShiftedArrays", "Test"]
-git-tree-sha1 = "70c4991f62231f00161e34d5b4301e1982c1ba6a"
-repo-rev = "master"
-repo-url = "https://github.com/Atomtomate/Dispersions.jl"
-uuid = "9451dd48-6b2a-4bde-a443-9ec270a37806"
-version = "0.8.0"
-
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -181,14 +173,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "3f3a2501fa7236e9b911e0f7a588c657e822bb6d"
 uuid = "5ae413db-bbd1-5e63-b57d-d24a61df00f5"
 version = "2.2.3+0"
-
-[[deps.EquivalenceClassesConstructor]]
-deps = ["DataStructures", "DocumenterTools", "Lazy", "Printf", "StaticArrays"]
-git-tree-sha1 = "6ce16b2429d73b75e2db5a58dbc4d80aa499351d"
-repo-rev = "main"
-repo-url = "/home/julian/JuliansBastelecke/EquivalenceClassesConstructor.jl"
-uuid = "b0d053df-94a8-4c0c-9762-4584a2fcd8b0"
-version = "0.5.5"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
