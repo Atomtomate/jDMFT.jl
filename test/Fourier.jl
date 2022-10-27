@@ -15,11 +15,10 @@
     @test τIntegrate(x-> x^5, grW, grG) ≈ 5381.21 rtol=0.1
 end
 
-@testset "naive TF" begin
-    τGrid_riemann,τWeights_riemann = jDMFT.riemann(0,β-0.0001,length(G_τ.data))
-    G_τ_riemann  = ω_to_τ(GW, ones(Float64, length(τGrid_riemann)) ./ length(τGrid_riemann), τGrid_riemann)
-    G2_riemann = τ_to_ω(G_τ_riemann, νnGrid, [1.0], [-0.5])
-    G2_GR = τ_to_ω(G_τ, νnGrid, [1.0], [-0.5])
-    @test maximum(abs.((GW.data .- G2_riemann.data) ./ GW.data)) < 1.0
-    @test maximum(abs.((GW.data .- G2_GR.data) ./ GW.data)) < 1/(length(G_τ.data)^1.8)
+@testset "FT Tests" begin
+    τGrid, τWeights = jDMFT.riemann(0,β-1/length(G_τ.data),length(G_τ.data))
+    G_τ = ω_to_τ(GW, τWeights, τGrid)
+    G2 = τ_to_ω(G_τ, νnGrid)
+    @test maximum(abs.((GW.data .- G2.data) ./ GW.data)) < 1e-8
+    @test real(G2.data[1] .* νnGrid[1]) ≈ 1.0
 end

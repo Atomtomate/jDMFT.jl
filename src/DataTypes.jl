@@ -27,3 +27,46 @@ mutable struct SampleMatrix
     end
 end
 
+"""
+    fast_update_incr!(M::SampleMatrix, N::Int)
+
+Compute fast inverse update, using Woodbury matrix idenity: 
+    `M_inv = inv(M)`
+    `Mnew_inv = M_inv` after inserting row/col/corner obtained from `M.rowCach`, `M.colCache`, `M.S`
+    `Mnew = inv(Mnew_inv)`
+
+`M.rowCache`, `M.colCache` and `M.S` must be set to the new values, before calling this function!
+`N` is the new size. TODO: currently only rank 1 updates supported, so `N = M.N+1`.
+"""
+function fast_update_incr!(M::SampleMatrix, N::Int)
+    Nold = M.N
+    Mi   = view(M.data, 1:Nold, 1:Nold)
+    Ri   = transpose(view(M.rowCache, 1:Nold))
+    Ci   = view(M.colCache, 1:Nold)
+    S    = Nold != 0 ? 1/(M.S - Ri*(Mi * Ci)) : 1/M.S
+
+    #TODO: this can probably be done very fast in a nested loop
+    M.data[1:Nold,N]  = -(Mi * Ci) * S
+    M.data[N,1:Nold]  = -S .* (Ri * Mi)
+    M.data[1:Nold,1:Nold]   = Mi + (Mi*Ci)*S*(Ri*Mi)
+    M.data[N,N] =  S
+    M.N = N
+end
+
+"""
+    fast_update_decr!(M::SampleMatrix, N::Int)
+
+Compute fast inverse update, using Woodbury matrix idenity: 
+    `M_inv = inv(M)`
+    `Mnew_inv = ``M_inv` after deleting right column and bottom row
+    `Mnew = inv(Mnew_inv)`
+
+`N` is the new size. TODO: currently only rank 1 updates supported, so `N = M.N-1`.
+"""
+function fast_update_decr!(M::SampleMatrix, N::Int)
+    Ri = view(M.data, M.N, 1:N)
+    Ci = view(M.data, 1:N, M.N)
+    #TODO: this can probably be done very fast in a nested loop
+    M.data[1:N,1:N] = M.data[1:N,1:N] .- (Ci * Ri') / M.data[M.N,M.N]
+    M.N = N
+end

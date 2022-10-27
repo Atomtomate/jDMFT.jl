@@ -1,6 +1,6 @@
 @testset "update cache" begin
     G0_ind = [0, 0.01, 0.02, 2.2, 5.5, 10.0, 15.5, 20.0] 
-    G0 = τFunction(convert.(ComplexF64,collect(1:length(G0_ind))), 20.0, G0_ind, ones(length(G0_ind))/length(G0_ind))
+    G0 = τFunction(convert.(ComplexF64,collect(1:length(G0_ind))), 20.0, G0_ind, ones(length(G0_ind))/length(G0_ind), [0.0, 0.0])
     c = jDMFT.CTInt_Confs(G0, G0_ind, 1.1)
     M = jDMFT.SampleMatrix(15)
     @test jDMFT.update_cache!(c,M) == 0
@@ -24,25 +24,26 @@ end
 
 @testset "Measurements" begin
     β_test = 2.2
-    τGrid, τWeights = jDMFT.gaussradau(0,β_test-0.001/10,10);
-    τGrid_riemann, τWeights_riemann = jDMFT.riemann(0,β_test-0.001/10,10);
+    τGrid_GR, τWeights_GR = jDMFT.gaussradau(0,β_test-0.001/10,10);
+    τGrid, τWeights       = jDMFT.riemann(0,β_test-0.001/10,10);
 
     sample_τGrid = 1.1 .* collect(1:10)
-    m = jDMFT.Measurements(zeros(ComplexF64, length(sample_τGrid)), sample_τGrid, 0, 0)
+    m = jDMFT.Measurements(zeros(ComplexF64, length(sample_τGrid)), sample_τGrid, 1, 2, 3)
     @test all(m.samples .== zeros(ComplexF64, length(sample_τGrid)))
     @test all(m.τGrid .≈ sample_τGrid)
-    @test m.NSamples == 0
-    @test m.totalSign == 0
+    @test m.NSamples == 1
+    @test m.totalSign == 2
+    @test m.totalExpOrder == 3
     m2 = jDMFT.Measurements(10, β_test, :GaussQuad)
     @test m2.NSamples == 0
     @test m2.totalSign == 0
     @test sum(m2.samples) == 0
-    @test all(m2.τGrid .≈ τGrid)
+    @test all(m2.τGrid .≈ τGrid_GR)
     m3 = jDMFT.Measurements(10, β_test, :Riemann)
     @test m3.NSamples == 0
     @test m3.totalSign == 0
     @test sum(m3.samples) == 0
-    @test all(m3.τGrid .≈ τGrid_riemann)
+    @test all(m3.τGrid .≈ τGrid)
     @test_throws DomainError jDMFT.Measurements(10, β_test, :throw) 
 end
 
@@ -50,7 +51,7 @@ end
     rng = MersenneTwister(0)
     cf = jDMFT.CTInt_Confs(G_τ, U)
     N = length(cf.τiList)
-    m_R = jDMFT.Measurements(N, G_τ_riemann.β, :Riemann)
+    m_R = jDMFT.Measurements(N, G_τ.β, :Riemann)
     m_GQ = jDMFT.Measurements(N, G_τ.β, :GaussQuad)
     M = jDMFT.SampleMatrix()
     jDMFT.accumulate!(rng, m_R, -1, cf, M, with_τshift=false)

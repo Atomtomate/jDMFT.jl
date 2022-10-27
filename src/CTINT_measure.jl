@@ -11,18 +11,22 @@ const τRangeϵ = 0.001
 
 Accumulation helper, see Gull et al., 2008.
 
+#TODO: this should be generalized to allow histograms and bootstrapping, e.g. dict of functors
+
 Fields
 -------------
 - **`samples`**      : `Vector{ComplexF64}`, List of all samples
 - **`τGrid`**        : `Vector{Float64}`, sampling points for τ
 - **`NSamples`**     : `Int`, number of samples
 - **`totalSign`**    : `Int`, total Monte Carlo sign.
+- **`totalExpOrder`**  : `Int`, sum of expansion orders
 """
 mutable struct Measurements
     samples::Vector{ComplexF64}
     τGrid::Vector{Float64}
     NSamples::Int
     totalSign::Int
+    totalExpOrder::Int
 end
 
 """
@@ -40,7 +44,7 @@ function Measurements(NBins::Int, β::Float64, type::Symbol)
     else
         throw(DomainError(type, "Type must specify pre-implemented τ-grid type (GaussQuad or Riemann)."))
     end
-    return Measurements(zeros(ComplexF64, length(τGrid)), τGrid, 0, 0)
+    return Measurements(zeros(ComplexF64, length(τGrid)), τGrid, 0, 0, 0)
 end
 
 """
@@ -50,6 +54,7 @@ Fields
 -------------
 - **`β`**         : `Float64`, inverse temperature
 - **`U`**         : `Float64`, interaction strenght
+- **`δ`**         : `Float64`, numerical stabilization parameter for sample matrix
 - **`GWeiss`**    : `τFunction`, noninteracting impurity Green's function
 - **`τList`**     : `Array{Float64}`, τ values on which the Green's function is evaluated
 - **`τiList`**    : `Array{Float64}`, sampled τ, i-th entry corresponds to i-th row/column in [`SampleMatrix`](@ref)
@@ -58,6 +63,7 @@ Fields
 mutable struct CTInt_Confs
     β::Float64
     U::Float64
+    δ::Float64
     GWeiss::τFunction
     τList::Array{Float64}
     τiList::Array{Float64}
@@ -65,7 +71,7 @@ mutable struct CTInt_Confs
     CTInt_Confs(GWeiss::τFunction, τList::Vector{Float64}, U::Float64) = 
         CTInt_Confs(GWeiss,τList,U,10)
         function CTInt_Confs(GWeiss::τFunction, τList::Vector{Float64},U::Float64,N::Int)
-            new(GWeiss.β, U, GWeiss, τList, Array{Float64}(undef, N), Array{Int}(undef, N))
+            new(GWeiss.β, U, 0.01, GWeiss, τList, Array{Float64}(undef, N), Array{Int}(undef, N))
     end
 end
 CTInt_Confs(GWeiss::τFunction, U::Float64) =  CTInt_Confs(GWeiss, GWeiss.τGrid, U)
@@ -101,9 +107,8 @@ stored in `M`.
 """
 function accumulate!(rng::AbstractRNG, m::Measurements, sign::Int, 
                   confs::CTInt_Confs, M::SampleMatrix; with_τshift=true)
-    τi_list = Vector{Float64}(undef, length(M.rowCache))
+    τi_list = deepcopy(confs.τiList[1:M.N])
     for i in 1:M.N
-        τi_list[i] = confs.τiList[i]
         if with_τshift
             τi_list[i] -= rand(rng, Float64) * confs.β
         end
@@ -118,20 +123,58 @@ function accumulate!(rng::AbstractRNG, m::Measurements, sign::Int,
     end
     m.NSamples += 1
     m.totalSign += sign
+    m.totalExpOrder += M.N
 end
 
 #TODO: use convolution theorem here
+"""
+    measure_GImp_τ(m::Measurements, GWeiss::τFunction)
+
+Measure impurity Green's function, after Monte Carlo samples have been accumulated
+in `m`, see also [`Measurements`](@ref).
+"""
 function measure_GImp_τ(m::Measurements, GWeiss::τFunction)
     GImp_τ = deepcopy(GWeiss.data)
     for i in 1:length(GImp_τ)
         τi = GWeiss.τGrid[i]
         tmp = 0.0
         for (j,τj_sample) in enumerate(m.τGrid)
-            tmp += draw_Gτ(GWeiss, τi - τj_sample) * m.samples[j] ./ m.totalSign
+            tmp += draw_Gτ(GWeiss, τi - τj_sample) * m.samples[j]
         end
-        GImp_τ[i] -= tmp
+        GImp_τ[i] -= tmp / m.totalSign
     end
     return GImp_τ
 end
 
-#TODO: frequency measurement
+#TODO: include this in Measurements
+#TODO: use fft
+function measure_GImp_ωn!(data::Vector{ComplexF64}, iνn::Vector{ComplexF64}, M::SampleMatrix, confs::CTInt_Confs, sign)
+    for (n,iν) in enumerate(iνn)
+        for (k,τk) in enumerate(confs.τiList[1:M.N])
+            for (l,τl) in enumerate(confs.τiList[1:M.N])
+                data[n] += sign*exp(iν*(τk - τl))*M.data[k,l]
+            end
+        end
+    end
+end
+
+
+# ================================================================================
+#                           Testing and stability                                =
+# ================================================================================
+
+function measure_GImp_τ!(GImp::Vector{ComplexF64}, M::SampleMatrix, GWeiss::τFunction, sign)
+    for ti in 1:length(GWeiss.data)
+        τ = GWeiss.τGrid[ti]
+        for i in 1:(size(M.data,1))
+            τi = GWeiss.τGrid[i]
+            g1 = draw_Gτ(GWeiss, τ - τi)
+            for j in 1:(size(M.data,2))
+                τj = GWeiss.τGrid[j]
+                g2 = draw_Gτ(GWeiss, τj)
+                GImp[ti] += sign*(GWeiss.data[ti] - g1 * M.data[i,j] * g2)
+            end
+        end
+    end
+    return GImp
+end
