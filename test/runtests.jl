@@ -1,7 +1,7 @@
 using Test, Logging
 using Random
 using FastGaussQuadrature
-using Dispersions
+#using Dispersions
 using jDMFT
 using DelimitedFiles
 
