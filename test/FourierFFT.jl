@@ -13,7 +13,7 @@ res_τ_sum = zeros(ComplexF64,length(grid_τ))
 data_ω = GW.data
 data_ω_sub = deepcopy(data_ω)
 tail_c = [1.0]
-tail_c_f = [-0.5]
+tail_c_f = [0.5]
 for i in 1:length(tail_c)
     for n in 1:length(data_ω)
         data_ω_sub[n] = data_ω[n] - tail_c[i]/νnGrid[n]

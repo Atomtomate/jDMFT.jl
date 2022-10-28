@@ -1,5 +1,17 @@
+# ==================================================================================================== #
+#                                           DMFTLoop.jl                                                #
+# ---------------------------------------------------------------------------------------------------- #
+#   Author          : Julian Stobbe                                                                    #
+#   Last Edit Date  : 28.10.22                                                                         #
+# ----------------------------------------- Description ---------------------------------------------- #
+#   DMFT loop implementation                                                                           #
+# -------------------------------------------- TODO -------------------------------------------------- #
+#   - This is only a stub for now.                                                                     #
+# ==================================================================================================== #
 
-function DMFTLoop(NIt::Int, GW_up::MatsubaraFunction, GW_τ_do::MatsubaraFunction, kG::KGrid, U::Float64, n::Float64, μ::Float64, β::Float64)
+
+
+function DMFTLoop(NIt::Int, GW_up::MatsubaraFunction, GW_do::MatsubaraFunction, kG::KGrid, U::Float64, n::Float64, μ::Float64, β::Float64)
     D      = 1.0
     νnGrid = GW_up.fGrid
     Nτ     = length(νnGrid)
@@ -17,8 +29,8 @@ function DMFTLoop(NIt::Int, GW_up::MatsubaraFunction, GW_τ_do::MatsubaraFunctio
         # ΣImp_i_up = Σ_Dyson(GW_up, GImp)
         # ΣImp_i_do = Σ_Dyson(GW_do, GImp)
         #
-        #GLoc_i = GLoc(iνn, μ, kG, ΣImp)
-        #G0 = WeissGF(GLoc_i, ΣImp_i)
+        GLoc_i = GLoc(νnGrid, μ, kG, ΣImp_i)
+        G0 = WeissGF(GLoc_i, ΣImp_i)
 
         GImp = GW_up.data ./ (1 .- GW_up.data .* ΣImp_i)
         GW_up = MatsubaraFunction(1 ./ (νnGrid .- D .* D .* GImp ./ 4), GW_up.β, νnGrid, [0.0, 1.0])

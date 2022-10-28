@@ -51,7 +51,7 @@ function τ_to_ω(data_τ::Vector{ComplexF64}, νnGrid::Vector{ComplexF64}, τGr
 end
 
 function ω_to_τ(data_ω::Vector{ComplexF64}, νnGrid::Vector{ComplexF64}, τGrid::Vector{Float64},
-                      ω_coeffs::Vector{Float64}, τ_coeffs::Vector{Float64}, β::Float64)
+                ω_coeffs::Vector{Float64}, τ_coeffs::Vector{Float64}, β::Float64)
     @assert length(data_ω) == length(νnGrid)
 
     Nν  = (imag(first(νnGrid))*β/π - 1) / 2 

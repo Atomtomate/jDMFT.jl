@@ -55,6 +55,8 @@ struct MatsubaraFunction
     tail_coeffs::AbstractVector
 end
 
+MatsubaraFunction(data::Vector{ComplexF64}, β::Float64, fGrid::Vector{ComplexF64}) = MatsubaraFunction(data, β, fGrid, [0.0, 1.0])
+
 """
     τFunction
 
@@ -75,6 +77,9 @@ struct τFunction
     τWeights::AbstractVector{Float64}
     tail_coeffs::AbstractVector
 end
+
+τFunction(data::Vector{ComplexF64}, β::Float64, τGrid::AbstractVector{Float64}, 
+              τWeights::AbstractVector{Float64}) = τFunction(data, β, τGrid, τWeights,  [0.5, 0.0])
 
 
 """
@@ -168,7 +173,8 @@ end
 Σ_Dyson(GBath::Vector{ComplexF64}, GImp::Vector{ComplexF64})::Vector{ComplexF64} = 1 ./ GBath .- 1 ./ GImp
 
 function GLoc(iνn::Vector{ComplexF64}, μ::Float64, kG::KGrid, ΣImp::Vector{ComplexF64})::Vector{ComplexF64}
-    return [kintegrate(kG, 1 ./ (iν .+ μ .- kG.ϵkGrid .- ΣImp)) for iν in iνn]
+    @assert length(iνn) == length(ΣImp)
+    return [kintegrate(kG, 1 ./ (iνn[i] .+ μ .- kG.ϵkGrid .- ΣImp[i])) for i in 1:length(iνn)]
 end
 
 WeissGF(GLoc::Vector{ComplexF64}, ΣImp::Vector{ComplexF64})::Vector{ComplexF64} = 1 ./ (1 ./ GLoc .+ ΣImp)

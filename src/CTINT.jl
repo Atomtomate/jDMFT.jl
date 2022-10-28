@@ -62,7 +62,6 @@ function sample!(confs::CTInt_Confs, measurements::Vector{Measurements}, MList::
         end
     end
     for i in 1:length(MList)
-        println("dbg: sign1 = ", totalSign, " sign_int = ", measurements[i].totalSign)
         GImp_τTest = GImp_τTest ./ totalSign
         GImp_νTest = GImp_νTest ./ totalSign 
     end

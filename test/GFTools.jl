@@ -1,11 +1,18 @@
 @testset "MatsubaraFunction" begin
-    #TODO: tests
-    @test 1 == 1
+    t = MatsubaraFunction([1.0+0.0im], 1.0, [1.1+0.0im]) 
+    @test all(t.data .== [1.0+0.0im])
+    @test all(t.fGrid .== [1.1+0.0im])
+    @test all(t.tail_coeffs .== [0.0, 1.0])
+    @test t.β == 1.0
 end
 
 @testset "τFunction" begin
-    #TODO: tests
-    @test 1 == 1
+    t = τFunction([1.0+0.0im], 1.0, [1.1], [1.2]) 
+    @test all(t.data .== [1.0+0.0im])
+    @test all(t.τGrid .== [1.1])
+    @test all(t.τWeights .== [1.2])
+    @test all(t.tail_coeffs .== [0.5, 0.0])
+    @test t.β == 1.0
 end
 
 @testset "tailTransform_ω_to_τ" begin

@@ -1,7 +1,7 @@
 using Test, Logging
 using Random
 using FastGaussQuadrature
-#using Dispersions
+# using Dispersions
 using jDMFT
 using DelimitedFiles
 
@@ -19,6 +19,7 @@ t_fac = 1#2*sqrt(6)
 U = 2.0 * t_fac
 β  = 14.0 * t_fac
 μ = 1.00 * t_fac
+n = 1.0
 # U = 0.7 * t_fac
 # β  = 1.0 * t_fac
 # μ = 0.35 * t_fac
@@ -34,13 +35,15 @@ GW = MatsubaraFunction(jDMFT.PH_transform(GW_in, U), β, νnGrid, [0.0, 1.0])
 G_τ = ω_to_τ(GW, τWeights, τGrid)
 #GImp_test = init_GImp((@__DIR__)*"/test_data/U2.0_b14.0_gm_wim", Nν)
 #GImp_τ_test = ω_to_τ(GW, τWeights, τGrid)
-#
+
+include("Random.jl")
+
 @testset "DataTypes" begin
     include("DataTypes.jl")
 end
 
 @testset "Fourier" begin
-   # include("Fourier.jl")
+    include("Fourier.jl")
     include("FourierFFT.jl")
 end
 
@@ -59,4 +62,3 @@ end
 @testset "CTINT" begin
     include("CTINT.jl")
 end
-include("Random.jl")
