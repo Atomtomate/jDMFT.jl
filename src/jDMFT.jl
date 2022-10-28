@@ -3,8 +3,7 @@ module jDMFT
 using Random, LinearAlgebra, Logging
 using FastGaussQuadrature
 using FFTW
-#using Dispersions
-const KGrid = Vector{Float64}
+using Dispersions
 
 export sample
 export MatsubaraFunction, τFunction

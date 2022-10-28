@@ -2,20 +2,20 @@ using Pkg
 Pkg.activate(".")
 using jDMFT
 using FastGaussQuadrature, DelimitedFiles
-#using Dispersions
+using Dispersions
 include("test/helper_functions.jl")
 
 t_fac = 1.0 #2*sqrt(6)
-U = 2.0 #0.20412414523193154 #1.1
-μ = 1.0 #0.10206207261596577 #0.55
-β  = 14.0 #0.20412414523193154 #10.0
+U = 1.0 #0.20412414523193154 #1.1
+μ = 0.5 #0.10206207261596577 #0.55
+β  = 10.0 #0.20412414523193154 #10.0
 n  = 1.0
 Nν = 100
 Nτ = 200
 νnGrid = jDMFT.iν_array(β, -Nν:Nν-1)
 τGrid_red, τWeights = gaussradau(Nτ);
 τGrid = τGrid_red .* β ./ 2 .+ β ./ 2;
-GW_in = init_weissgf_from_ed((@__DIR__)*"/test/test_data/U2.0_b14.0_hubb.andpar", Nν) #tt_hubb
+GW_in = init_weissgf_from_ed((@__DIR__)*"/test/test_data/U1.0_b10.0_hubb.andpar", Nν) #tt_hubb
 GW = MatsubaraFunction(jDMFT.PH_transform(GW_in, U), β, νnGrid)
 G_τ = ω_to_τ(GW, τWeights, τGrid)
 
@@ -35,4 +35,5 @@ G_τ = ω_to_τ(GW, τWeights, τGrid)
 
 #Σ_IPT = impSolve_IPT(U, 1.0, G_τ, G_τ, νnGrid)
 kG = gen_kGrid("3Dsc-0.2041241452319315", 10);
-ΣList = DMFTLoop(5, GW, GW, kG, U, n, μ, β)
+ΣList = DMFTLoop(15, GW, GW, kG, 0.1, n, μ, β)
+ΣList_2 = DMFTLoop(15, GW, GW, kG, 3.1, n, μ, β)
