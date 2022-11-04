@@ -13,10 +13,9 @@ n  = 1.0
 Nν = 100
 Nτ = 200
 νnGrid = jDMFT.iν_array(β, -Nν:Nν-1)
-τGrid_red, τWeights = gaussradau(Nτ);
-τGrid = τGrid_red .* β ./ 2 .+ β ./ 2;
 GW_in = init_weissgf_from_ed((@__DIR__)*"/test/test_data/U1.0_b10.0_hubb.andpar", Nν) #tt_hubb
 GW = MatsubaraFunction(jDMFT.PH_transform(GW_in, U), β, νnGrid)
+τGrid, τWeights = jDMFT.riemann(0.0,β-1/Nτ,Nτ)
 G_τ = ω_to_τ(GW, τWeights, τGrid)
 
 #cf, me, M, GImp_test_L, GImp_νtest_L = jDMFT.sample(G_τ, U, 2000, N_warmup=300, sample_τGrid=τGrid)

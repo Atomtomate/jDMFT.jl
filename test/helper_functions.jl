@@ -28,6 +28,12 @@ function init_weissgf_from_ed(N::Int, μ::Float64, β::Float64, ϵp::Vector{Floa
     return G
 end
 
+function init_weissgf_U0guess(N::Int, μ::Float64, β::Float64)
+    ϵp = [0.5, 1.0, -0.5, -1.0]
+    tp = [0.25, 0.25, 0.25, 0.25]
+    init_weissgf_from_ed(N, μ, β, ϵp, tp)
+end
+
 function init_GImp(fn::String, Nν::Int)
     arr = readdlm(fn)
     νn = arr[1:Nν,1]
@@ -36,4 +42,24 @@ function init_GImp(fn::String, Nν::Int)
     νn = [-1 .* reverse(νn[2:end]); νn]
     G = MatsubaraFunction([conj(reverse(data[2:end])); data], β, 1im .* νn, [1.0], [-0.5])
     return G
+end
+
+function solve_AtomicLimit(νnGrid::Vector{ComplexF64}, μ::Float64, n::Float64, β::Float64, U::Float64)
+    βi = BigFloat(β)
+    μi = BigFloat(μ)
+    Ui = BigFloat(U)
+    n = Float64(2 * (exp(βi*μi) + exp(βi*(2*μi-Ui))) / (1 + 2*exp(βi*μi) + exp(βi*(2*μi-Ui))))
+    GW    = [1 / (iν + μ) for iν in νnGrid]
+    GImp  = [(1 - n/2) / (iν + μ) + (n/2)/(iν + μ - U) for iν in νnGrid]
+    Σ     = 1 ./ GW .- 1 ./ GImp
+    return GW, GImp, Σ
+end
+
+function solve_NonIntLimit(νnGrid::Vector{ComplexF64}, kG::KGrid, μ::Float64, n::Float64, β::Float64, U::Float64)
+
+    Σ    = zeros(ComplexF64, length(νnGrid))
+    GLoc = jDMFT.GLoc(νnGrid, μ::Float64, kG, Σ)
+    GImp = deepcopy(GLoc)
+    GW   = deepcopy(GLoc)
+    return GW, GImp, Σ
 end
