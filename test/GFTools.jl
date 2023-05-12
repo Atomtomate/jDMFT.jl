@@ -50,3 +50,13 @@ end
 @testset "tail subtraction" begin
     @test all(jDMFT.subtract_tail(1.0 ./ νnGrid, [0.0,1.0], νnGrid) .≈ 0.0)
 end
+
+@testset "Dyson Eq" begin
+     GW, GImp, Σ = solve_AtomicLimit(νnGrid, μ, n, β, U)
+     GLoc = jDMFT.GLoc(νnGrid, μ, kG, Σ)
+     Δ    = jDMFT.Δ_FromGLocΣ(νnGrid, μ, GLoc, Σ)    
+     Δc1  = jDMFT.kintegrate(kG, jDMFT.dispersion(kG) .^ 2)
+     @test (- imag(GLoc) .* imag(νnGrid))[end] ≈ 1.0 atol=0.001
+     @test (- imag(Δ) .* imag(νnGrid))[end] ≈ Δc1 atol=0.001
+
+end

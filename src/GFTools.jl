@@ -2,7 +2,7 @@
 #                                           GFTools.jl                                                 #
 # ---------------------------------------------------------------------------------------------------- #
 #   Author          : Julian Stobbe                                                                    #
-#   Last Edit Date  : 26.10.22                                                                         #
+#   Last Edit Date  : 15.11.22                                                                         #
 # ----------------------------------------- Description ---------------------------------------------- #
 #   Green's function tools and data types.                                                             #
 # -------------------------------------------- TODO -------------------------------------------------- #
@@ -181,6 +181,7 @@ WeissGF(GLoc::Vector{ComplexF64}, ΣImp::Vector{ComplexF64})::Vector{ComplexF64}
 
 PH_transform(GWeiss::Vector{ComplexF64}, U::Float64, α::Float64=0.5) = 1 ./ (1 ./ GWeiss .- α * U)
 
+Δ_FromGLocΣ(iν::Vector{ComplexF64}, μ::Float64, GLoc::Vector{ComplexF64}, Σ::Vector{ComplexF64}) = iν .+ μ .- Σ .- 1 ./ GLoc   
 
 # ================================================================================
 #                                     Misc                                       =

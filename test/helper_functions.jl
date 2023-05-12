@@ -34,6 +34,12 @@ function init_weissgf_U0guess(N::Int, μ::Float64, β::Float64)
     init_weissgf_from_ed(N, μ, β, ϵp, tp)
 end
 
+
+function init_weissgf_ALguess(νnGrid::Vector{ComplexF64}, μ::Float64)
+    1 ./ (νnGrid .+ μ)
+end
+
+
 function init_GImp(fn::String, Nν::Int)
     arr = readdlm(fn)
     νn = arr[1:Nν,1]
@@ -49,13 +55,13 @@ function solve_AtomicLimit(νnGrid::Vector{ComplexF64}, μ::Float64, n::Float64,
     μi = BigFloat(μ)
     Ui = BigFloat(U)
     n = Float64(2 * (exp(βi*μi) + exp(βi*(2*μi-Ui))) / (1 + 2*exp(βi*μi) + exp(βi*(2*μi-Ui))))
-    GW    = [1 / (iν + μ) for iν in νnGrid]
-    GImp  = [(1 - n/2) / (iν + μ) + (n/2)/(iν + μ - U) for iν in νnGrid]
+    GW    = 1 ./ (νnGrid .+ μ)
+    GImp  = (1 - n/2) ./ (νnGrid .+ μ) .+ (n/2) ./ (νnGrid .+ μ .- U)
     Σ     = 1 ./ GW .- 1 ./ GImp
     return GW, GImp, Σ
 end
 
-function solve_NonIntLimit(νnGrid::Vector{ComplexF64}, kG::KGrid, μ::Float64, n::Float64, β::Float64, U::Float64)
+function solve_NonIntLimit(νnGrid::Vector{ComplexF64}, kG, μ::Float64, n::Float64, β::Float64, U::Float64)
 
     Σ    = zeros(ComplexF64, length(νnGrid))
     GLoc = jDMFT.GLoc(νnGrid, μ::Float64, kG, Σ)

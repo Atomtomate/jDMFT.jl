@@ -26,15 +26,12 @@ n = 1.0
 Nν = 200
 Nτ = 400
 νnGrid = jDMFT.iν_array(β, -Nν:Nν-1)
-#τGrid_red, τWeights = gaussradau(Nτ);
-#τGrid = τGrid_red .* β ./ 2 .+ β ./ 2;
 GW_in = init_weissgf_from_ed((@__DIR__)*"/test_data/U2.0_b14.0_hubb.andpar", Nν)
-# GW_in = init_weissgf_from_ed((@__DIR__)*"/test_data/U0.7_b1.0_hubb.andpar", Nν)
 GW = MatsubaraFunction(jDMFT.PH_transform(GW_in, U), β, νnGrid, [0.0, 1.0])
 τGrid, τWeights = jDMFT.riemann(0.0,β-1/Nτ,Nτ)
 G_τ = ω_to_τ(GW, τWeights, τGrid)
-#GImp_test = init_GImp((@__DIR__)*"/test_data/U2.0_b14.0_gm_wim", Nν)
-#GImp_τ_test = ω_to_τ(GW, τWeights, τGrid)
+kG = gen_kGrid("3Dsc-0.2041241452319315", 20);
+
 
 include("Random.jl")
 

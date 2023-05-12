@@ -17,11 +17,11 @@ function DMFTLoop(NIt::Int, GW_up::MatsubaraFunction, GW_do::MatsubaraFunction, 
     ΣImp_list = []
     tmp_Gup = deepcopy(GW_up)
     tmp_Gdo = deepcopy(GW_do)
-    ΣImp_i = nothing
+    ΣImp_i = Vector{ComplexF64}(undef, length(GW_up.data))
 
     for i in 1:NIt
 
-        ΣImp_i = impSolve_IPT(tmp_Gup, tmp_Gdo, νnGrid, U, n)
+        ΣImp_i[:] = impSolve_IPT(tmp_Gup, tmp_Gdo, νnGrid, U, n)
         #push!(ΣImp_list, ΣImp_i)
 
         GLoc_i = GLoc(νnGrid, μ, kG, ΣImp_i)

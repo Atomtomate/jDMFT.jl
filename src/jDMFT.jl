@@ -5,6 +5,8 @@ using FastGaussQuadrature
 using FFTW
 using Dispersions
 
+export gen_kGrid
+
 export sample
 export MatsubaraFunction, τFunction
 export subtract_tail
